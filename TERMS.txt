@@ -1,0 +1,31 @@
+ZH Motions Free License
+Copyright (c) 2026 ZH Motions. All rights reserved.
+
+Permission is granted, free of charge, to any person to install and use
+"ZH Script Studio" (the "Software") for personal and commercial video-editing
+work, subject to the Terms & Conditions below.
+
+YOU MAY:
+  - Use the Software on any number of your own machines.
+  - Use the Software in paid client and commercial work.
+  - Share the original, unmodified installer (.zxp).
+
+YOU MAY NOT:
+  - Sell, rent, or sublicense the Software.
+  - Rebrand it or claim it as your own product.
+  - Remove or alter ZH Motions branding.
+  - Distribute modified copies.
+
+PRIVACY:
+  The Software runs entirely on your computer. It does not upload, collect,
+  or transmit your scripts, documents, or any data.
+
+NO WARRANTY:
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED. IN NO EVENT SHALL ZH MOTIONS BE LIABLE FOR ANY CLAIM, DAMAGES,
+  DATA LOSS, OR OTHER LIABILITY ARISING FROM USE OF THE SOFTWARE.
+
+Adobe, Premiere Pro and After Effects are trademarks of Adobe Inc.
+ZH Motions is not affiliated with or endorsed by Adobe.
+
+zhmotions.com
