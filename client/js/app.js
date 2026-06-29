@@ -1896,28 +1896,53 @@
     Array.prototype.forEach.call(ov.querySelectorAll(".ss-tpl-row"), function (row) {
       var t = list[+row.getAttribute("data-i")];
       row.onclick = function () { ssHidePreview(); ov.remove(); downloadOnlineTemplate(t); };
-      if (t && t.preview) {
-        row.onmousemove = function (e) { ssHoverPreview(DIRECT_BASE + "/templates/" + t.preview, e.clientX, e.clientY); };
+      if (t && (t.previewVideo || t.preview)) {
+        // previewVideo = animated .mp4 (extracted from the MOGRT, like Premiere's
+        // Essential Graphics browser). Falls back to the static preview image.
+        var hoverUrl = DIRECT_BASE + "/templates/" + (t.previewVideo || t.preview);
+        var hoverIsVideo = !!t.previewVideo;
+        row.onmousemove = function (e) { ssHoverPreview(hoverUrl, e.clientX, e.clientY, hoverIsVideo); };
         row.onmouseleave = function () { ssHidePreview(); };
       }
     });
   }
 
-  // Floating preview that follows the cursor (template hover).
-  function ssHoverPreview(url, x, y) {
-    var el = document.getElementById("ssHoverPrev");
-    if (!el) {
-      el = document.createElement("img"); el.id = "ssHoverPrev";
-      el.style.cssText = "position:fixed;z-index:10002;width:240px;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.55);pointer-events:none;display:none;border:1px solid #666;background:#111;";
-      el.onerror = function () { el.style.display = "none"; };
-      document.body.appendChild(el);
+  // Floating preview that follows the cursor (template hover). Plays the animated
+  // .mp4 when one exists (like Premiere's Essential Graphics browser), else a static image.
+  var SS_PREV_CSS = "position:fixed;z-index:10002;width:240px;border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.55);pointer-events:none;display:none;border:1px solid #666;background:#111;";
+  function ssHoverPreview(url, x, y, isVideo) {
+    var img = document.getElementById("ssHoverPrev");
+    if (!img) {
+      img = document.createElement("img"); img.id = "ssHoverPrev";
+      img.style.cssText = SS_PREV_CSS;
+      img.onerror = function () { img.style.display = "none"; };
+      document.body.appendChild(img);
     }
-    if (el.getAttribute("data-src") !== url) { el.src = url; el.setAttribute("data-src", url); }
+    var vid = document.getElementById("ssHoverPrevVid");
+    if (!vid) {
+      vid = document.createElement("video"); vid.id = "ssHoverPrevVid";
+      vid.autoplay = true; vid.loop = true; vid.muted = true; vid.setAttribute("playsinline", "");
+      vid.style.cssText = SS_PREV_CSS;
+      vid.onerror = function () { vid.style.display = "none"; };
+      document.body.appendChild(vid);
+    }
+    var el = isVideo ? vid : img, other = isVideo ? img : vid;
+    other.style.display = "none";
+    if (el.getAttribute("data-src") !== url) {
+      el.src = url; el.setAttribute("data-src", url);
+      if (isVideo) { try { el.play(); } catch (e) {} }
+    }
     el.style.left = Math.max(8, Math.min(x + 16, window.innerWidth - 252)) + "px";
     el.style.top = Math.max(8, Math.min(y + 16, window.innerHeight - 170)) + "px";
     el.style.display = "block";
   }
-  function ssHidePreview() { var el = document.getElementById("ssHoverPrev"); if (el) { el.style.display = "none"; el.removeAttribute("data-src"); } }
+  function ssHidePreview() {
+    var ids = ["ssHoverPrev", "ssHoverPrevVid"], i, el;
+    for (i = 0; i < ids.length; i += 1) {
+      el = document.getElementById(ids[i]);
+      if (el) { el.style.display = "none"; el.removeAttribute("data-src"); try { if (el.pause) el.pause(); } catch (e) {} }
+    }
+  }
   function downloadOnlineTemplate(t) {
     var nr = getNodeRequire();
     var dir = onlineTemplatesDir();
