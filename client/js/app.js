@@ -1873,6 +1873,10 @@
     x.onerror = x.ontimeout = function () { fetchTemplateManifest(bases, idx + 1); };   // next base
     try { x.send(); } catch (es) { fetchTemplateManifest(bases, idx + 1); }
   }
+  // Cache-bust template assets so a re-uploaded preview always refreshes (CEF would
+  // otherwise keep serving the old cached image/video at the same URL). Per panel session.
+  var TPL_CB = Date.now();
+  function tplAssetUrl(name) { return DIRECT_BASE + "/templates/" + name + "?v=" + TPL_CB; }
   function showOnlineTemplateModal(list) {
     var old = document.getElementById("ssTplModal"); if (old) old.remove();
     var ov = document.createElement("div");
@@ -1881,7 +1885,7 @@
     var rows = list.length
       ? list.map(function (t, i) {
           var pv = t.preview
-            ? '<img src="' + escapeHtml(DIRECT_BASE + "/templates/" + t.preview) + '" style="width:72px;height:44px;object-fit:cover;border-radius:6px;flex:0 0 auto;" onerror="this.style.visibility=\'hidden\'">'
+            ? '<img src="' + escapeHtml(tplAssetUrl(t.preview)) + '" style="width:72px;height:44px;object-fit:cover;border-radius:6px;flex:0 0 auto;" onerror="this.style.visibility=\'hidden\'">'
             : '<div style="width:72px;height:44px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">🎬</div>';
           return '<div class="ss-tpl-row" data-i="' + i + '" style="display:flex;align-items:center;gap:10px;padding:8px 9px;border:1px solid var(--panel-line,#555);border-radius:8px;margin-bottom:6px;cursor:pointer;">' +
             pv + '<span style="flex:1;">' + escapeHtml(t.name || t.file) + '</span><span style="color:var(--zh-gold,#d4a017);font-size:11px;flex:0 0 auto;">Download ↓</span></div>';
@@ -1899,7 +1903,7 @@
       if (t && (t.previewVideo || t.preview)) {
         // previewVideo = animated .mp4 (extracted from the MOGRT, like Premiere's
         // Essential Graphics browser). Falls back to the static preview image.
-        var hoverUrl = DIRECT_BASE + "/templates/" + (t.previewVideo || t.preview);
+        var hoverUrl = tplAssetUrl(t.previewVideo || t.preview);
         var hoverIsVideo = !!t.previewVideo;
         row.onmousemove = function (e) { ssHoverPreview(hoverUrl, e.clientX, e.clientY, hoverIsVideo); };
         row.onmouseleave = function () { ssHidePreview(); };
@@ -1965,7 +1969,7 @@
         var buf = nr("buffer").Buffer.from(new Uint8Array(x.response));
         var dest = nr("path").join(dir, file);
         nr("fs").writeFileSync(dest, buf);
-        var pvUrl = t.preview ? (DIRECT_BASE + "/templates/" + t.preview) : "";
+        var pvUrl = t.preview ? tplAssetUrl(t.preview) : "";
         setTitleTemplate(dest, t.name || file.replace(/\.[^.]+$/, ""), pvUrl);   // save + activate (+ preview for hover)
       } catch (e) { showStatus("Couldn't save the template: " + e.message, true); }
     };
