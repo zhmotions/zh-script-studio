@@ -2667,25 +2667,54 @@
   }
 
   // Split full script text into short subtitle cues: by line, sentence (. ! ? । ;), then wrap long ones.
+  // Function words that read awkwardly when left dangling at the END of a caption
+  // line — we prefer to push them onto the next line. English set; the check is a
+  // no-op for other languages, which still benefit from the punctuation/length logic.
+  var CUE_DANGLE_SET = (function () {
+    var s = {}, w = ("a an the and or but nor so yet for of to in on at by as is are was were be been with from into onto " +
+      "that this these those my your his her its our their if than then who which what when while because about over " +
+      "under per not no do does did has have had will would can could should may might must").split(" ");
+    for (var i = 0; i < w.length; i += 1) s[w[i]] = 1;
+    return s;
+  })();
+  function cueWordKey(w) { return String(w).toLowerCase().replace(/[^a-z0-9]+/gi, ""); }
+
+  // Grammar-aware line builder: greedily fills up to ~maxChars, breaks right after
+  // strong internal punctuation (a natural pause) once the line is half full, and
+  // never ends a line on a dangling function word — it slides that word down instead.
+  function smartSplitSentence(sentence, maxChars) {
+    var words = sentence.split(/\s+/).filter(Boolean);
+    var lines = [], i = 0;
+    while (i < words.length) {
+      var line = [words[i]], j = i + 1;
+      while (j < words.length) {
+        if ((line.join(" ") + " " + words[j]).length > maxChars) break;
+        line.push(words[j]); j += 1;
+        if (/[,;:।—-]$/.test(words[j - 1]) && line.join(" ").length >= maxChars * 0.5) break;
+      }
+      while (line.length > 1 && j < words.length && CUE_DANGLE_SET[cueWordKey(line[line.length - 1])]) {
+        j -= 1; line.pop();
+      }
+      lines.push(line.join(" "));
+      i = j;
+    }
+    return lines;
+  }
+
   function splitIntoCues(text) {
     text = String(text || "").replace(/\r/g, "").trim();
     if (!text) return [];
+    var MAX = 42;   // broadcast-standard single caption line length
     var cues = [];
     text.split(/\n+/).forEach(function (block) {
       block = block.trim();
       if (!block) return;
+      // each sentence is a natural pause boundary — never merge two into one cue
       var sentences = block.match(/[^.!?।;]+[.!?।;]+|[^.!?।;]+$/g) || [block];
       sentences.forEach(function (s) {
         s = s.trim();
         if (!s) return;
-        while (s.length > 50) {
-          var cut = s.lastIndexOf(" ", 50);
-          if (cut < 20) cut = 50;
-          var piece = s.slice(0, cut).trim();
-          if (piece) cues.push(piece);
-          s = s.slice(cut).trim();
-        }
-        if (s) cues.push(s);
+        smartSplitSentence(s, MAX).forEach(function (piece) { if (piece) cues.push(piece); });
       });
     });
     return cues;
